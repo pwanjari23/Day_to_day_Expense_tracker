@@ -1,3 +1,4 @@
+const bcrypt = require("bcrypt");
 const User = require("../models/user");
 
 exports.signup = async (req, res) => {
@@ -9,10 +10,14 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    // Hash the password before saving
+    const saltRounds = 10; // bcrypt recommended
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
     const newUser = await User.create({
       name,
       email,
-      password,
+      password: hashedPassword, // store hashed password
     });
 
     res.status(201).json({
@@ -25,17 +30,27 @@ exports.signup = async (req, res) => {
   }
 };
 
+
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password required" });
+  }
 
   try {
     const user = await User.findOne({ where: { email } });
 
-    if (!user || user.password !== password) {
+    if (!user) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // login successful
+    // Compare password with hashed password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
     res.json({
       message: "Login successful",
       user: { id: user.id, name: user.name, email: user.email },
