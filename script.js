@@ -1,16 +1,73 @@
+// script.js
 document.addEventListener("DOMContentLoaded", () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   if (!token) {
-    window.location.href = '/login/index.html';
+    window.location.href = "/login/index.html";
     return;
   }
 
-  const appContainer = document.getElementById('app-container');
-  appContainer.classList.remove('hidden');
+  const appContainer = document.getElementById("app-container");
+  appContainer.classList.remove("hidden");
 
-  // Modal control
+  // ── Buy Premium Membership Button ─────────────────────────────
+  const buyPremiumBtn = document.getElementById("buyPremiumBtn");
+
+  if (buyPremiumBtn) {
+    buyPremiumBtn.addEventListener("click", async () => {
+      try {
+        console.log("Starting checkout...");
+
+        // Call backend to create order
+        const res = await fetch("http://localhost:5000/api/payments/create-order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // if your backend uses auth
+          },
+        });
+
+        const data = await res.json();
+        console.log("Checkout data:", data);
+
+        if (!data.success || !data.payment_session_id) {
+          alert("Failed to start payment: " + (data.message || "Unknown error"));
+          return;
+        }
+
+        // Make sure Cashfree JS SDK is loaded
+        if (!window.Cashfree) {
+          console.error("Cashfree JS SDK not loaded!");
+          alert("Payment SDK not loaded. Check console.");
+          return;
+        }
+
+        // Initialize Cashfree checkout
+        Cashfree.checkout({
+          sessionId: data.payment_session_id,
+          mode: "sandbox", // mandatory for sandbox testing
+          redirectTarget: "_self", // stay in same tab
+          onSuccess: function (paymentData) {
+            console.log("Payment Success:", paymentData);
+            alert("Payment successful! Check console for details.");
+          },
+          onFailure: function (err) {
+            console.error("Payment Failed:", err);
+            alert("Payment failed! See console for details.");
+          },
+        });
+
+        console.log("Cashfree checkout called");
+
+      } catch (err) {
+        console.error("Payment initiation error:", err);
+        alert("Something went wrong while starting payment. See console.");
+      }
+    });
+  }
+
+  // ── Modal logic (Add Expense) ─────────────────────────────
   const modal = document.getElementById("addModal");
-  const modalContent = modal.querySelector('div');
+  const modalContent = modal.querySelector("div");
   const openBtn = document.getElementById("openAddBtn");
   const closeBtn = document.getElementById("closeAddBtn");
 
@@ -29,56 +86,41 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("expenseForm").reset();
   }
 
-  openBtn.addEventListener("click", openModal);
-  closeBtn.addEventListener("click", closeModal);
-  modal.addEventListener("click", e => {
-    if (e.target === modal) closeModal();
-  });
+  if (openBtn) openBtn.addEventListener("click", openModal);
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
 
-  // Expense logic
+  // ── Expense logic ─────────────────────────────
   const form = document.getElementById("expenseForm");
   const todayList = document.getElementById("todayList");
   const todayTotalEl = document.getElementById("todayTotal");
-
   let todayTotal = 0;
 
   fetchExpenses();
 
-  form.addEventListener("submit", async e => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-
     const amount = parseFloat(document.getElementById("amount").value);
     const title = document.getElementById("title").value.trim();
     const category = document.getElementById("category").value;
-
     if (isNaN(amount) || amount <= 0 || !title || !category) {
       alert("Please fill all fields correctly");
       return;
     }
-
     try {
       const res = await fetch("http://localhost:5000/api/expenses/addexpense", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` 
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ amount, title, category })
+        body: JSON.stringify({ amount, title, category }),
       });
 
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          localStorage.removeItem('token');
-          window.location.href = '/login/index.html';
-          return;
-        }
-        throw new Error(await res.text());
-      }
-
+      if (!res.ok) throw new Error(await res.text());
       const expense = await res.json();
       addExpenseToList(expense);
       closeModal();
-
     } catch (err) {
       console.error(err);
       alert("Could not add expense: " + (err.message || "Unknown error"));
@@ -88,34 +130,18 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchExpenses() {
     try {
       const res = await fetch("http://localhost:5000/api/expenses/getExpenses", {
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          localStorage.removeItem('token');
-          window.location.href = '/login/index.html';
-          return;
-        }
-        throw new Error();
-      }
-
+      if (!res.ok) throw new Error("Failed to fetch expenses");
       const expenses = await res.json();
 
       todayList.innerHTML = "";
       todayTotal = 0;
 
-      let todayCount = 0;
-      expenses.forEach(exp => {
-        if (isToday(exp.date)) {
-          addExpenseToList(exp);
-          todayCount++;
-        }
+      expenses.forEach((exp) => {
+        if (isToday(exp.date)) addExpenseToList(exp);
       });
-
-      if (todayCount === 0) {
-        showNoExpensesPlaceholder();
-      }
 
     } catch (err) {
       console.error("Fetch failed", err);
@@ -128,7 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
     item.dataset.id = exp.id;
     item.className = "expense-item p-5 sm:p-6 flex items-center gap-5 hover:bg-teal-50/70 transition relative group";
 
-    const time = new Date(exp.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const time = new Date(exp.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
     item.innerHTML = `
       <div class="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">
@@ -139,62 +165,12 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="text-sm text-teal-700/80">${time} • ${exp.category}</div>
       </div>
       <div class="font-bold text-rose-500 text-xl whitespace-nowrap">–₹${Number(exp.amount).toLocaleString()}</div>
-      
-      <button class="delete-btn absolute right-5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-rose-500 hover:text-rose-700 text-xl"
-              title="Delete expense">
-        🗑
-      </button>
     `;
-
-    item.querySelector('.delete-btn').addEventListener('click', async () => {
-      if (!confirm("Delete this expense?")) return;
-
-      try {
-        const res = await fetch(`http://localhost:5000/api/expenses/delete/${exp.id}`, {
-          method: "DELETE",
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (!res.ok) {
-          if (res.status === 401 || res.status === 403) {
-            localStorage.removeItem('token');
-            window.location.href = '/login/index.html';
-            return;
-          }
-          const errData = await res.json();
-          throw new Error(errData.message || "Delete failed");
-        }
-
-        const amt = Number(exp.amount);
-        todayTotal = Math.max(0, todayTotal - amt);
-        todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
-
-        item.remove();
-
-        if (todayList.children.length === 0) {
-          showNoExpensesPlaceholder();
-        }
-
-      } catch (err) {
-        console.error("Delete error:", err);
-        alert("Could not delete expense: " + (err.message || "Server error"));
-      }
-    });
 
     todayList.prepend(item);
 
-    const amt = Number(exp.amount);
-    todayTotal += amt;
+    todayTotal += Number(exp.amount);
     todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
-  }
-
-  function showNoExpensesPlaceholder() {
-    todayList.innerHTML = `
-      <div class="py-16 text-center text-teal-500/70 italic">
-        No expenses added today yet...<br>
-        <span class="text-sm">Click "+ Add New Expense" to start tracking</span>
-      </div>
-    `;
   }
 
   function isToday(dateStr) {
@@ -211,8 +187,9 @@ document.addEventListener("DOMContentLoaded", () => {
       "Health": "🩺",
       "Petrol": "⛽",
       "Salary": "💰",
-      "Other": "📌"
+      "Other": "📌",
     };
     return map[cat] || "📌";
   }
+
 });
