@@ -3,17 +3,24 @@ const form = document.getElementById("signup-form");
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const name = form.querySelector("input[type='text']").value.trim();
-  const email = form.querySelector("input[type='email']").value.trim();
-  const password = form
-    .querySelectorAll("input[type='password']")[0]
-    .value.trim();
-  const confirmPassword = form
-    .querySelectorAll("input[type='password']")[1]
-    .value.trim();
+  const name = form.name.value.trim();
+  const email = form.email.value.trim();
+  const password = form.password.value.trim();
+  const confirmPassword = form.confirmPassword.value.trim();
 
   if (!name || !email || !password || !confirmPassword) {
     alert("Please fill in all fields");
+    return;
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    alert("Please enter a valid email address");
+    return;
+  }
+
+  if (password.length < 8) {
+    alert("Password must be at least 8 characters long");
     return;
   }
 
@@ -34,7 +41,7 @@ form.addEventListener("submit", async (e) => {
     if (response.ok) {
       alert(data.message);
       form.reset();
-      window.location.href = "../index.html";
+      window.location.href = "../login/index.html";  // Redirect to login after signup
     } else {
       alert(data.message);
     }

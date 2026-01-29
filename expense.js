@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/sequelize");
+const User = require("./user");
 
 const Expense = sequelize.define(
   "Expense",
@@ -25,10 +26,21 @@ const Expense = sequelize.define(
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: 'id'
+      }
+    }
   },
   {
     timestamps: true,
   }
 );
+
+User.hasMany(Expense, { foreignKey: 'userId' });
+Expense.belongsTo(User, { foreignKey: 'userId' });
 
 module.exports = Expense;

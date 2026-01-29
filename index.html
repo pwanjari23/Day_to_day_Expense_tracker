@@ -1,47 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily Expenses</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    form input, form select { margin: 5px; padding: 5px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login - Expense Tracker</title>
+  <link href="../../css/output.css" rel="stylesheet" />
 </head>
-<body>
 
-<h2>Add Daily Expense</h2>
+<body class="min-h-screen flex items-center justify-center
+             bg-gradient-to-br from-tealSoft-100 via-tealSoft-200 to-tealSoft-300">
 
-<form id="expenseForm">
-  <input type="number" id="amount" placeholder="Amount" required />
-  <input type="text" id="title" placeholder="Description" required />
-  <select id="category" required>
-    <option value="Food">Food</option>
-    <option value="Petrol">Petrol</option>
-    <option value="Salary">Salary</option>
-    <option value="Other">Other</option>
-  </select>
-  <button type="submit">Add Expense</button>
-</form>
+  <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-xl">
 
-<h3>Expenses List</h3>
-<table id="expenseTable">
-  <thead>
-    <tr>
-      <th>Amount</th>
-      <th>Description</th>
-      <th>Category</th>
-      <th>Date</th>
-    </tr>
-  </thead>
-  <tbody>
-    <!-- Expenses will appear here -->
-  </tbody>
-</table>
+    <h1 class="text-2xl font-semibold text-center text-tealSoft-600 mb-6">
+      Login
+    </h1>
 
-<script src="./addExpense.js"></script>
+    <form id="login-form" class="space-y-5">
+      <input
+        type="email"
+        placeholder="Email"
+        class="w-full p-3 border-b border-gray-300
+               focus:outline-none focus:border-tealSoft-400"
+        required
+      />
+
+      <input
+        type="password"
+        placeholder="Password"
+        class="w-full p-3 border-b border-gray-300
+               focus:outline-none focus:border-tealSoft-400"
+        required
+      />
+
+      <button
+        type="submit"
+        class="w-full bg-tealSoft-500 hover:bg-tealSoft-600
+               text-white py-3 rounded-lg transition font-medium">
+        Login
+      </button>
+    </form>
+
+    <p class="mt-6 text-sm text-gray-500 text-center">
+      Don't have an account?
+      <a href="../signup/index.html" class="text-tealSoft-600 hover:underline">
+        Sign up
+      </a>
+    </p>
+  </div>
+
+  <script src="../../js/login.js"></script>
 </body>
 </html>

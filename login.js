@@ -11,8 +11,19 @@ form.addEventListener("submit", async (e) => {
     return;
   }
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    alert("Please enter a valid email address");
+    return;
+  }
+
+  if (password.length < 8) {
+    alert("Password must be at least 8 characters long");
+    return;
+  }
+
   try {
-    const response = await fetch("/api/users/login", {
+    const response = await fetch("http://localhost:5000/api/users/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -21,9 +32,10 @@ form.addEventListener("submit", async (e) => {
     const data = await response.json();
 
     if (response.ok) {
+      localStorage.setItem('token', data.token);  // Store token
       alert("Login successful! Welcome, " + data.user.name);
       form.reset();
-      window.location.href = "/dashboard.html"; // redirect after login
+      window.location.href = "/dashboard.html"; 
     } else {
       alert(data.message || "Login failed");
     }

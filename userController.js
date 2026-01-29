@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
 exports.signup = async (req, res) => {
@@ -10,14 +11,13 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Hash the password before saving
-    const saltRounds = 10; // bcrypt recommended
+    const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     const newUser = await User.create({
       name,
       email,
-      password: hashedPassword, // store hashed password
+      password: hashedPassword,
     });
 
     res.status(201).json({
@@ -29,7 +29,6 @@ exports.signup = async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 };
-
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
@@ -45,15 +44,18 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // Compare password with hashed password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
+    // Generate JWT token
+    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
     res.json({
       message: "Login successful",
       user: { id: user.id, name: user.name, email: user.email },
+      token
     });
   } catch (error) {
     console.error(error);
