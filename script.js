@@ -368,75 +368,79 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function addExpenseToList(exp) {
-    const item = document.createElement("div");
-    item.dataset.id = exp.id;
-    item.className =
-      "expense-item p-5 sm:p-6 flex items-center gap-5 hover:bg-teal-50/70 transition relative group";
+ function addExpenseToList(exp) {
+  const item = document.createElement("div");
+  // Use exp.id if exists, otherwise exp._id
+  const expenseId = exp.id || exp._id;
+  item.dataset.id = expenseId;
 
-    const time = new Date(exp.date).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  item.className =
+    "expense-item p-5 sm:p-6 flex items-center gap-5 hover:bg-teal-50/70 transition relative group";
 
-    item.innerHTML = `
-      <div class="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">
-        ${getEmoji(exp.category)}
-      </div>
-      <div class="flex-1 min-w-0">
-        <div class="font-medium text-lg text-teal-900 truncate">${exp.title}</div>
-        <div class="text-sm text-teal-700/80">${time} • ${exp.category}</div>
-      </div>
-      <div class="font-bold text-rose-500 text-xl whitespace-nowrap">–₹${Number(exp.amount).toLocaleString()}</div>
-      <button class="delete-btn absolute right-5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-rose-500 hover:text-rose-700 text-xl"
-              title="Delete expense">
-        🗑
-      </button>
-    `;
+  const time = new Date(exp.date).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
-    item.querySelector(".delete-btn").addEventListener("click", async () => {
-      if (!confirm("Delete this expense?")) return;
+  item.innerHTML = `
+    <div class="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">
+      ${getEmoji(exp.category)}
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="font-medium text-lg text-teal-900 truncate">${exp.title}</div>
+      <div class="text-sm text-teal-700/80">${time} • ${exp.category}</div>
+    </div>
+    <div class="font-bold text-rose-500 text-xl whitespace-nowrap">–₹${Number(exp.amount).toLocaleString()}</div>
+    <button class="delete-btn absolute right-5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-rose-500 hover:text-rose-700 text-xl"
+            title="Delete expense">
+      🗑
+    </button>
+  `;
 
-      try {
-        const res = await fetch(
-          `http://localhost:5000/api/expenses/delete/${exp.id}`,
-          {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
+  item.querySelector(".delete-btn").addEventListener("click", async () => {
+    if (!confirm("Delete this expense?")) return;
 
-        if (!res.ok) {
-          if (res.status === 401 || res.status === 403) {
-            localStorage.removeItem("token");
-            window.location.href = "/login/index.html";
-            return;
-          }
-          const errData = await res.json();
-          throw new Error(errData.message || "Delete failed");
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/expenses/delete/${expenseId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("token");
+          window.location.href = "/login/index.html";
+          return;
         }
-
-        const amt = Number(exp.amount);
-        todayTotal = Math.max(0, todayTotal - amt);
-        todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
-
-        item.remove();
-
-        if (todayList.children.length === 0) {
-          showNoExpensesPlaceholder();
-        }
-      } catch (err) {
-        console.error("Delete error:", err);
-        alert("Could not delete expense: " + (err.message || "Server error"));
+        const errData = await res.json();
+        throw new Error(errData.message || "Delete failed");
       }
-    });
 
-    todayList.prepend(item);
+      const amt = Number(exp.amount);
+      todayTotal = Math.max(0, todayTotal - amt);
+      todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
 
-    const amt = Number(exp.amount);
-    todayTotal += amt;
-    todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
-  }
+      item.remove();
+
+      if (todayList.children.length === 0) {
+        showNoExpensesPlaceholder();
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Could not delete expense: " + (err.message || "Server error"));
+    }
+  });
+
+  todayList.prepend(item);
+
+  const amt = Number(exp.amount);
+  todayTotal += amt;
+  todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
+}
+
 
   // ask ai api
 
