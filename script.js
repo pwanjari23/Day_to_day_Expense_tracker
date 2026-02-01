@@ -1,71 +1,183 @@
-// script.js
+let token = localStorage.getItem("token");
+
+function updatePremiumUI() {
+  const premiumStatusDiv = document.getElementById("premiumStatus");
+  const buyPremiumBtn = document.getElementById("buyPremiumBtn");
+
+  const userDetails = JSON.parse(localStorage.getItem("userDetails"));
+
+  if (userDetails && userDetails.isPremium) {
+    // Show premium badge
+    premiumStatusDiv.classList.remove("hidden");
+
+    // Hide buy button
+    buyPremiumBtn.classList.add("hidden");
+  } else {
+    // Not premium
+    premiumStatusDiv.classList.add("hidden");
+    buyPremiumBtn.classList.remove("hidden");
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  const token = localStorage.getItem("token");
   if (!token) {
     window.location.href = "/login/index.html";
     return;
   }
+  updatePremiumUI();
 
   const appContainer = document.getElementById("app-container");
   appContainer.classList.remove("hidden");
+  logout.addEventListener("click", async function () {
+    localStorage.clear();
+    window.location.href = "/login/index.html";
+    return;
+  });
 
-  // ── Buy Premium Membership Button ─────────────────────────────
-  const buyPremiumBtn = document.getElementById("buyPremiumBtn");
+  buyPremiumBtn.addEventListener("click", async function () {
+    try {
+      buyPremiumBtn.disabled = true;
+      buyPremiumBtn.textContent = "Processing...";
 
-  if (buyPremiumBtn) {
-    buyPremiumBtn.addEventListener("click", async () => {
-      try {
-        console.log("Starting checkout...");
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("User not logged in");
 
-        // Call backend to create order
-        const res = await fetch("http://localhost:5000/api/payments/create-order", {
+      // 1️⃣ Create order
+      const res = await fetch(
+        "http://localhost:5000/api/payments/create-order",
+        {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // if your backend uses auth
+            Authorization: `Bearer ${token}`,
           },
-        });
+          body: JSON.stringify({}),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok || !data.success)
+        throw new Error(data.message || "Order creation failed");
 
-        const data = await res.json();
-        console.log("Checkout data:", data);
+      // 2️⃣ Open Cashfree modal
+      const cashfree = window.Cashfree({ mode: "sandbox" });
 
-        if (!data.success || !data.payment_session_id) {
-          alert("Failed to start payment: " + (data.message || "Unknown error"));
-          return;
-        }
-
-        // Make sure Cashfree JS SDK is loaded
-        if (!window.Cashfree) {
-          console.error("Cashfree JS SDK not loaded!");
-          alert("Payment SDK not loaded. Check console.");
-          return;
-        }
-
-        // Initialize Cashfree checkout
-        Cashfree.checkout({
-          sessionId: data.payment_session_id,
-          mode: "sandbox", // mandatory for sandbox testing
-          redirectTarget: "_self", // stay in same tab
-          onSuccess: function (paymentData) {
-            console.log("Payment Success:", paymentData);
-            alert("Payment successful! Check console for details.");
-          },
-          onFailure: function (err) {
-            console.error("Payment Failed:", err);
-            alert("Payment failed! See console for details.");
-          },
-        });
-
-        console.log("Cashfree checkout called");
-
-      } catch (err) {
-        console.error("Payment initiation error:", err);
-        alert("Something went wrong while starting payment. See console.");
+      const cashfreeResult = await cashfree.checkout({
+        paymentSessionId: data.payment_session_id,
+        redirectTarget: "_modal",
+      });
+      if (cashfreeResult.error) {
+        console.log("error during  pay", cashfreeResult.error);
       }
-    });
+      if (cashfreeResult.redirect) {
+        console.log("pay redicted", cashfreeResult.redirect);
+      }
+      if (cashfreeResult.paymentDetails) {
+        console.log(
+          "payment completed, check for payment status",
+          cashfreeResult.paymentDetails,
+        );
+        console.log(cashfreeResult.paymentDetails.paymentMessage);
+        const userToken = localStorage.getItem("token");
+        console.log("userToken", userToken);
+        const orderStatusResponse = await fetch(
+          `http://localhost:5000/api/payments/order-status?order_id=${data.order_id}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${userToken}`,
+            },
+          },
+        );
+        const orderStatusResponseData = await orderStatusResponse.json();
+        console.log(orderStatusResponseData, "orderStatusResponseData");
+        const alertStatus = orderStatusResponseData.orderStatus;
+        // alert(`Payment status is:${alertStatus} `);
+
+        const getUserDetails = await fetch(
+          `http://localhost:5000/api/users/userdetails/${orderStatusResponseData.userId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${userToken}`,
+            },
+          },
+        );
+        const getUserDetailResponseData = await getUserDetails.json();
+        localStorage.setItem(
+          "userDetails",
+          JSON.stringify(getUserDetailResponseData),
+        );
+        updatePremiumUI();
+        alert("You are a premium user now");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Connection issue");
+    } finally {
+      buyPremiumBtn.disabled = false;
+      buyPremiumBtn.textContent = "Buy Premium Membership";
+    }
+  });
+
+  async function fetchLeaderboard() {
+    try {
+      leaderboardContent.innerHTML = `<p class="text-center text-slate-500">Loading...</p>`;
+
+      const userDetails = JSON.parse(localStorage.getItem("userDetails"));
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `http://localhost:5000/api/premium/getLeaderboard/${userDetails.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch leaderboard");
+
+      const data = await res.json();
+
+      renderLeaderboard(data.allUserExpense);
+      openLeaderboardModal();
+    } catch (err) {
+      console.error(err);
+      leaderboardContent.innerHTML = `
+      <p class="text-center text-rose-600">Could not load leaderboard</p>
+    `;
+      openLeaderboardModal();
+    }
   }
 
-  // ── Modal logic (Add Expense) ─────────────────────────────
+  function renderLeaderboard(expenses) {
+    if (!expenses || expenses.length === 0) {
+      leaderboardContent.innerHTML = `
+      <p class="text-center text-slate-500">No data available</p>
+    `;
+      return;
+    }
+
+    leaderboardContent.innerHTML = expenses
+      .map(
+        (item) => `
+        <div class="flex justify-between items-center bg-slate-50 rounded-lg px-4 py-3">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">${getEmoji(item.category)}</span>
+            <span class="font-medium">${item.category}</span>
+          </div>
+          <div class="font-semibold text-rose-600">
+            ₹ ${Number(item.totalSpendAmout).toLocaleString()}
+          </div>
+        </div>
+      `,
+      )
+      .join("");
+  }
+
+  // ── Modal control ────────────────────────────────────────
   const modal = document.getElementById("addModal");
   const modalContent = modal.querySelector("div");
   const openBtn = document.getElementById("openAddBtn");
@@ -88,26 +200,74 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (openBtn) openBtn.addEventListener("click", openModal);
   if (closeBtn) closeBtn.addEventListener("click", closeModal);
-  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
 
-  // ── Expense logic ─────────────────────────────
-  const form = document.getElementById("expenseForm");
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  // ── Leaderboard Modal ─────────────────────────────────────
+  const leaderboardModal = document.getElementById("leaderboardModal");
+  const leaderboardContent = document.getElementById("leaderboardContent");
+  const viewLeaderboardBtn = document.getElementById("viewLeaderboardBtn");
+  const closeLeaderboardBtn = document.getElementById("closeLeaderboardBtn");
+
+  function openLeaderboardModal() {
+    leaderboardModal.classList.remove("opacity-0", "pointer-events-none");
+    leaderboardModal.classList.add("opacity-100", "pointer-events-auto");
+    leaderboardModal
+      .querySelector("div")
+      .classList.remove("scale-95", "opacity-0");
+    leaderboardModal
+      .querySelector("div")
+      .classList.add("scale-100", "opacity-100");
+  }
+
+  function closeLeaderboardModal() {
+    leaderboardModal.classList.add("opacity-0", "pointer-events-none");
+    leaderboardModal.classList.remove("opacity-100", "pointer-events-auto");
+    leaderboardModal
+      .querySelector("div")
+      .classList.add("scale-95", "opacity-0");
+    leaderboardModal
+      .querySelector("div")
+      .classList.remove("scale-100", "opacity-100");
+  }
+
+  if (viewLeaderboardBtn) {
+    viewLeaderboardBtn.addEventListener("click", fetchLeaderboard);
+  }
+
+  if (closeLeaderboardBtn) {
+    closeLeaderboardBtn.addEventListener("click", closeLeaderboardModal);
+  }
+
+  leaderboardModal.addEventListener("click", (e) => {
+    if (e.target === leaderboardModal) closeLeaderboardModal();
+  });
+
+  // ── Expense logic ────────────────────────────────────────
+  const expenseForm = document.getElementById("expenseForm");
   const todayList = document.getElementById("todayList");
   const todayTotalEl = document.getElementById("todayTotal");
+
   let todayTotal = 0;
 
   fetchExpenses();
 
-  form.addEventListener("submit", async (e) => {
+  expenseForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+
     const amount = parseFloat(document.getElementById("amount").value);
     const title = document.getElementById("title").value.trim();
     const category = document.getElementById("category").value;
+
     if (isNaN(amount) || amount <= 0 || !title || !category) {
       alert("Please fill all fields correctly");
       return;
     }
+
     try {
+      console.log({ amount, title, category });
       const res = await fetch("http://localhost:5000/api/expenses/addexpense", {
         method: "POST",
         headers: {
@@ -117,7 +277,15 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ amount, title, category }),
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("token");
+          window.location.href = "/login/index.html";
+          return;
+        }
+        throw new Error(await res.text());
+      }
+
       const expense = await res.json();
       addExpenseToList(expense);
       closeModal();
@@ -129,20 +297,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function fetchExpenses() {
     try {
-      const res = await fetch("http://localhost:5000/api/expenses/getExpenses", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        "http://localhost:5000/api/expenses/getExpenses",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
-      if (!res.ok) throw new Error("Failed to fetch expenses");
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("token");
+          window.location.href = "/login/index.html";
+          return;
+        }
+        throw new Error();
+      }
+
       const expenses = await res.json();
 
       todayList.innerHTML = "";
       todayTotal = 0;
 
+      let todayCount = 0;
       expenses.forEach((exp) => {
-        if (isToday(exp.date)) addExpenseToList(exp);
+        // if (isToday(exp.date)) {
+        // }
+        addExpenseToList(exp);
+        todayCount++;
       });
 
+      if (todayCount === 0) {
+        showNoExpensesPlaceholder();
+      }
     } catch (err) {
       console.error("Fetch failed", err);
       todayList.innerHTML = `<div class="p-12 text-center text-rose-600">Failed to load expenses</div>`;
@@ -152,9 +338,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function addExpenseToList(exp) {
     const item = document.createElement("div");
     item.dataset.id = exp.id;
-    item.className = "expense-item p-5 sm:p-6 flex items-center gap-5 hover:bg-teal-50/70 transition relative group";
+    item.className =
+      "expense-item p-5 sm:p-6 flex items-center gap-5 hover:bg-teal-50/70 transition relative group";
 
-    const time = new Date(exp.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const time = new Date(exp.date).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
     item.innerHTML = `
       <div class="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">
@@ -165,12 +355,63 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="text-sm text-teal-700/80">${time} • ${exp.category}</div>
       </div>
       <div class="font-bold text-rose-500 text-xl whitespace-nowrap">–₹${Number(exp.amount).toLocaleString()}</div>
+      <button class="delete-btn absolute right-5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-rose-500 hover:text-rose-700 text-xl"
+              title="Delete expense">
+        🗑
+      </button>
     `;
+
+    item.querySelector(".delete-btn").addEventListener("click", async () => {
+      if (!confirm("Delete this expense?")) return;
+
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/expenses/delete/${exp.id}`,
+          {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem("token");
+            window.location.href = "/login/index.html";
+            return;
+          }
+          const errData = await res.json();
+          throw new Error(errData.message || "Delete failed");
+        }
+
+        const amt = Number(exp.amount);
+        todayTotal = Math.max(0, todayTotal - amt);
+        todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
+
+        item.remove();
+
+        if (todayList.children.length === 0) {
+          showNoExpensesPlaceholder();
+        }
+      } catch (err) {
+        console.error("Delete error:", err);
+        alert("Could not delete expense: " + (err.message || "Server error"));
+      }
+    });
 
     todayList.prepend(item);
 
-    todayTotal += Number(exp.amount);
+    const amt = Number(exp.amount);
+    todayTotal += amt;
     todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
+  }
+
+  function showNoExpensesPlaceholder() {
+    todayList.innerHTML = `
+      <div class="py-16 text-center text-teal-500/70 italic">
+        No expenses added today yet...<br>
+        <span class="text-sm">Click "+ Add New Expense" to start tracking</span>
+      </div>
+    `;
   }
 
   function isToday(dateStr) {
@@ -180,16 +421,15 @@ document.addEventListener("DOMContentLoaded", () => {
   function getEmoji(cat) {
     const map = {
       "Food & Drinks": "🍴",
-      "Transport": "🚕",
-      "Shopping": "🛍️",
-      "Bills": "💡",
-      "Entertainment": "🎬",
-      "Health": "🩺",
-      "Petrol": "⛽",
-      "Salary": "💰",
-      "Other": "📌",
+      Transport: "🚕",
+      Shopping: "🛍️",
+      Bills: "💡",
+      Entertainment: "🎬",
+      Health: "🩺",
+      Petrol: "⛽",
+      Salary: "💰",
+      Other: "📌",
     };
     return map[cat] || "📌";
   }
-
 });
