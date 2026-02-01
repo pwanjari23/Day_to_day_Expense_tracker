@@ -205,6 +205,39 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target === modal) closeModal();
   });
 
+  //ASK AI
+  const askAIBtn = document.getElementById("askAI");
+  const askAIModal = document.getElementById("askAIModal");
+  const closeAskAIBtn = document.getElementById("closeAskAIBtn");
+  const sendAskAIBtn = document.getElementById("sendAskAIBtn");
+  const askAIInput = document.getElementById("askAIInput");
+  const askAIResponse = document.getElementById("askAIResponse");
+
+  function openAskAIModal() {
+    askAIModal.classList.remove("opacity-0", "pointer-events-none");
+    askAIModal.classList.add("opacity-100", "pointer-events-auto");
+    askAIModal.querySelector("div").classList.remove("scale-95", "opacity-0");
+    askAIModal.querySelector("div").classList.add("scale-100", "opacity-100");
+  }
+
+  function closeAskAIModal() {
+    askAIModal.classList.add("opacity-0", "pointer-events-none");
+    askAIModal.classList.remove("opacity-100", "pointer-events-auto");
+    askAIModal.querySelector("div").classList.add("scale-95", "opacity-0");
+    askAIModal
+      .querySelector("div")
+      .classList.remove("scale-100", "opacity-100");
+    askAIInput.value = "";
+    askAIResponse.textContent = "";
+  }
+
+  if (askAIBtn) askAIBtn.addEventListener("click", openAskAIModal);
+  if (closeAskAIBtn) closeAskAIBtn.addEventListener("click", closeAskAIModal);
+
+  askAIModal.addEventListener("click", (e) => {
+    if (e.target === askAIModal) closeAskAIModal();
+  });
+
   // ── Leaderboard Modal ─────────────────────────────────────
   const leaderboardModal = document.getElementById("leaderboardModal");
   const leaderboardContent = document.getElementById("leaderboardContent");
@@ -404,6 +437,46 @@ document.addEventListener("DOMContentLoaded", () => {
     todayTotal += amt;
     todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
   }
+
+  // ask ai api
+
+  sendAskAIBtn.addEventListener("click", async () => {
+    const question = askAIInput.value.trim();
+    if (!question) {
+      alert("Please enter a question");
+      return;
+    }
+
+    try {
+      sendAskAIBtn.disabled = true;
+      sendAskAIBtn.textContent = "Thinking...";
+      askAIResponse.textContent = "";
+
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:5000/api/callAI/callai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ prompt: question }),
+      });
+
+      if (!res.ok) throw new Error("AI request failed");
+
+      const data = await res.json();
+
+      // assuming backend returns { reply: "..." }
+      askAIResponse.textContent = data.reply || "No response from AI 🤖";
+    } catch (err) {
+      console.error(err);
+      askAIResponse.textContent = "Something went wrong while talking to AI.";
+    } finally {
+      sendAskAIBtn.disabled = false;
+      sendAskAIBtn.textContent = "Ask AI";
+    }
+  });
 
   function showNoExpensesPlaceholder() {
     todayList.innerHTML = `

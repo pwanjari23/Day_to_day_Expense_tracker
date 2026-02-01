@@ -56,6 +56,12 @@
         >
           View Leaderboard
         </button>
+        <button
+          id="askAI"
+          class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md text-sm transition"
+        >
+          Ask AI
+        </button>
       </div>
 
       <!-- Main Content -->
@@ -179,6 +185,46 @@
         <div id="leaderboardContent" class="space-y-3 text-slate-700">
           <!-- Leaderboard rows injected here -->
         </div>
+      </div>
+    </div>
+
+    <!--ASK AI-->
+    <!-- Ask AI Modal -->
+    <div
+      id="askAIModal"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center opacity-0 pointer-events-none transition z-50"
+    >
+      <div
+        class="bg-white rounded-2xl w-full max-w-md mx-4 p-6 shadow-xl scale-95 opacity-0 transition"
+      >
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold text-slate-700">Ask AI 💡</h3>
+          <button
+            id="closeAskAIBtn"
+            class="text-slate-500 hover:text-slate-700 text-xl"
+          >
+            &times;
+          </button>
+        </div>
+
+        <textarea
+          id="askAIInput"
+          rows="4"
+          placeholder="Ask about your expenses, savings tips, insights..."
+          class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+        ></textarea>
+
+        <button
+          id="sendAskAIBtn"
+          class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg transition"
+        >
+          Ask AI
+        </button>
+
+        <div
+          id="askAIResponse"
+          class="mt-4 text-slate-700 text-sm whitespace-pre-wrap"
+        ></div>
       </div>
     </div>
 
