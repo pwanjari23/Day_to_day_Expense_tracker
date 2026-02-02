@@ -3,232 +3,296 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Daily Expense Tracker</title>
+    <title>Expense Tracker</title>
     <link href="css/output.css" rel="stylesheet" />
   </head>
 
-  <body class="bg-slate-100 min-h-screen font-sans antialiased">
-    <!-- Dashboard Wrapper -->
-    <div id="app-container" class="hidden min-h-screen">
-      <!-- Header -->
-      <header class="bg-white border-b shadow-sm sticky top-0 z-40">
-        <div
-          class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+  <body class="bg-[#0b0f14] text-slate-200 min-h-screen antialiased p-6">
+    <div id="app-container" class="hidden flex min-h-[calc(100vh-3rem)] gap-6">
+      <!-- SIDEBAR -->
+      <aside
+        class="w-64 bg-[#0f172a] border border-white/5 rounded-3xl flex flex-col"
+      >
+        <div class="px-6 py-6 text-2xl font-bold text-teal-400">
+          Expense Tracker
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2">
+          <div
+            id="homeNav"
+            class="px-4 py-3 rounded-xl bg-teal-600/10 text-teal-400 cursor-pointer"
+          >
+            🏠 Home
+          </div>
+          <div
+            id="expensesNav"
+            class="px-4 py-3 rounded-xl hover:bg-white/5 cursor-pointer"
+          >
+            💸 Expenses
+          </div>
+          <div class="px-4 py-3 rounded-xl hover:bg-white/5 cursor-pointer">
+            ⚙️ Settings
+          </div>
+        </nav>
+
+        <button
+          id="logout"
+          class="m-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white"
         >
+          Logout
+        </button>
+      </aside>
+
+      <!-- MAIN -->
+      <main
+        class="flex-1 bg-[#0f172a] border border-white/5 rounded-3xl p-8 space-y-8"
+      >
+        <!-- HEADER - only welcome back -->
+        <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold text-teal-700">Daily Expenses</h1>
-            <p class="text-sm text-slate-500">Track your spending with ease</p>
+            <h1 class="text-2xl font-semibold">Welcome back 👋</h1>
+            <p class="text-slate-400 text-sm">
+              Track and control your spending
+            </p>
           </div>
 
-          <div class="flex flex-wrap gap-3">
-            <button
-              id="openAddBtn"
-              class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-            >
-              + Add Expense
-            </button>
-
+          <div class="flex gap-3 items-center">
             <button
               id="buyPremiumBtn"
-              class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+              class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-sm"
             >
-              Buy Premium
+              Go Premium
+            </button>
+
+            <div
+              id="premiumStatus"
+              class="hidden flex gap-3 items-center bg-emerald-600/10 text-emerald-400 px-4 py-2 rounded-xl"
+            >
+              ⭐ Premium
+            </div>
+          </div>
+        </div>
+
+        <!-- HOME VIEW - only the 3 buttons -->
+        <div id="homeView" class="space-y-8">
+          <section class="flex flex-wrap gap-6">
+            <button
+              id="openAddBtn"
+              class="bg-[#111827] border border-teal-500 rounded-2xl p-6 hover:border-emerald-500 transition text-left flex-1"
+            >
+              <p class="text-lg font-semibold">➕ Add Expense</p>
+              <p class="text-sm text-slate-400">Log a new expense</p>
             </button>
 
             <button
-              id="logout"
-              class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+              id="viewLeaderboardBtn"
+              class="bg-[#111827] border border-teal-500 rounded-2xl p-6 hover:border-emerald-500 transition text-left flex-1"
             >
-              Logout
+              <p class="text-lg font-semibold">🏆 Leaderboard</p>
+              <p class="text-sm text-slate-400">Top spenders</p>
             </button>
-          </div>
+
+            <button
+              id="askAI"
+              class="bg-[#111827] border border-teal-500 rounded-2xl p-6 hover:border-purple-500 transition text-left flex-1"
+            >
+              <p class="text-lg font-semibold">🤖 Ask AI</p>
+              <p class="text-sm text-slate-400">Insights & tips</p>
+            </button>
+
+            <button
+              id="reportBtn"
+              class="bg-[#111827] border border-teal-500 rounded-2xl p-6 hover:border-purple-500 transition text-left flex-1"
+            >
+              <p class="text-lg font-semibold">📊 Generate Report</p>
+              <p class="text-sm text-slate-400">Insights & tips</p>
+            </button>
+          </section>
         </div>
-      </header>
-      <div
-        id="premiumStatus"
-        class="hidden mt-4 px-4 py-2 rounded-lg bg-emerald-100 text-emerald-700 font-medium flex items-center justify-between gap-4"
-      >
-        <span>⭐ You are a premium user</span>
 
-        <button
-          id="viewLeaderboardBtn"
-          class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md text-sm transition"
-        >
-          View Leaderboard
-        </button>
-        <button
-          id="askAI"
-          class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md text-sm transition"
-        >
-          Ask AI
-        </button>
-      </div>
-
-      <!-- Main Content -->
-      <main class="max-w-6xl mx-auto px-4 py-6">
-        <!-- Summary Card -->
-        <div class="bg-white rounded-2xl shadow border mb-6">
-          <div class="flex justify-between items-center px-6 py-4 border-b">
-            <h2 class="text-lg font-semibold text-slate-700">
-              Today's Spending
-            </h2>
-            <div class="text-right">
-              <p class="text-xs text-slate-500">Total</p>
-              <p id="todayTotal" class="text-2xl font-bold text-rose-600">
-                ₹ 0
-              </p>
+        <!-- EXPENSES VIEW -->
+        <div id="expensesView" class="hidden">
+          <section
+            class="bg-[#111827] border border-white/5 rounded-2xl overflow-hidden"
+          >
+            <div
+              class="flex justify-between items-center px-6 py-4 border-b border-white/5"
+            >
+              <h2 class="text-lg font-semibold">Expenses</h2>
+              <div class="text-right">
+                <p class="text-xs text-slate-400">Today</p>
+                <p id="todayTotal" class="text-xl font-bold text-rose-400">
+                  ₹ 0
+                </p>
+              </div>
             </div>
-          </div>
 
-          <!-- Expense List -->
-          <div id="todayList" class="divide-y max-h-[65vh] overflow-y-auto">
-            <!-- Expenses injected here -->
-          </div>
+            <div
+              id="todayList"
+              class="divide-y divide-white/5 max-h-[60vh] overflow-y-auto [&>*]:bg-transparent [&>*]:text-white [&>*_small]:text-slate-400"
+            ></div>
+          </section>
         </div>
       </main>
     </div>
 
-    <!-- Add Expense Modal -->
+    <!-- MODALS -->
     <div
       id="addModal"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center opacity-0 pointer-events-none transition z-50"
+      class="fixed inset-0 bg-black/70 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300 z-50"
     >
       <div
-        class="bg-white rounded-2xl w-full max-w-md mx-4 p-6 shadow-xl scale-95 opacity-0 transition"
+        class="bg-[#0f172a] rounded-2xl p-8 w-full max-w-md border border-white/10 scale-95 opacity-0 transition-all duration-300"
       >
-        <div class="flex justify-between items-center mb-5">
-          <h3 class="text-xl font-semibold text-slate-700">Add Expense</h3>
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold">Add New Expense</h2>
           <button
             id="closeAddBtn"
-            class="text-slate-500 hover:text-slate-700 text-xl"
+            class="text-slate-400 hover:text-white text-2xl"
           >
-            &times;
+            ×
           </button>
         </div>
-
-        <form id="expenseForm" class="space-y-4">
-          <input
-            id="amount"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="Amount (₹)"
-            required
-            class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
-          />
-
-          <input
-            id="title"
-            type="text"
-            placeholder="Expense title"
-            required
-            class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
-          />
-
-          <select
-            id="category"
-            required
-            class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
-          >
-            <option value="" disabled selected>Select Category</option>
-            <option value="Food & Drinks">🍴 Food & Drinks</option>
-            <option value="Transport">🚕 Transport</option>
-            <option value="Shopping">🛍️ Shopping</option>
-            <option value="Bills">💡 Bills & Utilities</option>
-            <option value="Entertainment">🎬 Entertainment</option>
-            <option value="Health">🩺 Health</option>
-            <option value="Petrol">⛽ Fuel</option>
-            <option value="Salary">💰 Salary / Income</option>
-            <option value="Other">📌 Other</option>
-          </select>
-
-          <div class="flex gap-3 pt-4">
-            <button
-              type="button"
-              id="closeAddBtn"
-              class="flex-1 py-3 bg-slate-200 rounded-lg text-slate-700 hover:bg-slate-300 transition"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              class="flex-1 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition"
-            >
-              Add
-            </button>
+        <form id="expenseForm" class="space-y-5">
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">Title</label>
+            <input
+              type="text"
+              id="title"
+              required
+              class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-teal-500"
+              placeholder="e.g. Morning Coffee"
+            />
           </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">Amount (₹)</label>
+            <input
+              type="number"
+              id="amount"
+              step="0.01"
+              min="0.01"
+              required
+              class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-teal-500"
+              placeholder="120.50"
+            />
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">Category</label>
+            <select
+              id="category"
+              required
+              class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-teal-500"
+            >
+              <option value="" disabled selected>Select category</option>
+              <option value="Food & Drinks">Food & Drinks</option>
+              <option value="Transport">Transport</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Bills">Bills</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Health">Health</option>
+              <option value="Petrol">Petrol</option>
+              <option value="Salary">Salary</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <button
+            type="submit"
+            class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-medium transition"
+          >
+            Add Expense
+          </button>
         </form>
       </div>
     </div>
 
-    <!-- Leaderboard Modal -->
-    <div
-      id="leaderboardModal"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center opacity-0 pointer-events-none transition z-50"
-    >
-      <div
-        class="bg-white rounded-2xl w-full max-w-md mx-4 p-6 shadow-xl scale-95 opacity-0 transition"
-      >
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-xl font-semibold text-slate-700">
-            Expense Leaderboard
-          </h3>
-          <button
-            id="closeLeaderboardBtn"
-            class="text-slate-500 hover:text-slate-700 text-xl"
-          >
-            &times;
-          </button>
-        </div>
-
-        <div id="leaderboardContent" class="space-y-3 text-slate-700">
-          <!-- Leaderboard rows injected here -->
-        </div>
-      </div>
-    </div>
-
-    <!--ASK AI-->
-    <!-- Ask AI Modal -->
     <div
       id="askAIModal"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center opacity-0 pointer-events-none transition z-50"
+      class="fixed inset-0 bg-black/70 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300 z-50"
     >
       <div
-        class="bg-white rounded-2xl w-full max-w-md mx-4 p-6 shadow-xl scale-95 opacity-0 transition"
+        class="bg-[#0f172a] rounded-2xl p-8 w-full max-w-lg border border-white/10 scale-95 opacity-0 transition-all duration-300"
       >
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-xl font-semibold text-slate-700">Ask AI 💡</h3>
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold">Ask AI for Insights</h2>
           <button
             id="closeAskAIBtn"
-            class="text-slate-500 hover:text-slate-700 text-xl"
+            class="text-slate-400 hover:text-white text-2xl"
           >
-            &times;
+            ×
           </button>
         </div>
-
-        <textarea
-          id="askAIInput"
-          rows="4"
-          placeholder="Ask about your expenses, savings tips, insights..."
-          class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-        ></textarea>
-
-        <button
-          id="sendAskAIBtn"
-          class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg transition"
-        >
-          Ask AI
-        </button>
-
-        <div
-          id="askAIResponse"
-          class="mt-4 text-slate-700 text-sm whitespace-pre-wrap"
-        ></div>
+        <div class="space-y-4">
+          <textarea
+            id="askAIInput"
+            rows="4"
+            class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 resize-none"
+            placeholder="Ask anything about your spending..."
+          ></textarea>
+          <button
+            id="sendAskAIBtn"
+            class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-medium transition"
+          >
+            Ask AI
+          </button>
+          <div
+            id="askAIResponse"
+            class="mt-4 p-4 bg-[#111827] rounded-xl text-slate-200 min-h-[120px] whitespace-pre-wrap"
+          ></div>
+        </div>
       </div>
     </div>
 
+    <div
+      id="leaderboardModal"
+      class="fixed inset-0 bg-black/70 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300 z-50"
+    >
+      <div
+        class="bg-[#0f172a] rounded-2xl p-8 w-full max-w-2xl border border-white/10 scale-95 opacity-0 transition-all duration-300 max-h-[90vh] overflow-y-auto"
+      >
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold">Spending Leaderboard</h2>
+          <button
+            id="closeLeaderboardBtn"
+            class="text-slate-400 hover:text-white text-2xl"
+          >
+            ×
+          </button>
+        </div>
+        <div id="leaderboardContent" class="space-y-3">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
     <script src="js/script.js"></script>
+
+    <!-- View Toggle -->
+    <script>
+      const homeView = document.getElementById("homeView");
+      const expensesView = document.getElementById("expensesView");
+      const homeNav = document.getElementById("homeNav");
+      const expensesNav = document.getElementById("expensesNav");
+
+      homeNav.onclick = () => {
+        homeView.classList.remove("hidden");
+        expensesView.classList.add("hidden");
+      };
+
+      expensesNav.onclick = () => {
+        homeView.classList.add("hidden");
+        expensesView.classList.remove("hidden");
+      };
+    </script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const app = document.getElementById("app-container");
+        if (app.classList.contains("hidden")) {
+          app.classList.remove("hidden");
+        }
+      });
+    </script>
   </body>
 </html>
