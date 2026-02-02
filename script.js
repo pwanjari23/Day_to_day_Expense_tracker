@@ -225,6 +225,33 @@ document.addEventListener("DOMContentLoaded", () => {
       .join("");
   }
 
+  // Change number of items per page
+  document.getElementById("itemsPerPage")?.addEventListener("change", (e) => {
+    itemsPerPage = parseInt(e.target.value);
+    localStorage.setItem("itemsPerPage", itemsPerPage);
+
+    currentPage = 1; // Reset to first page
+    renderFilteredExpenses(); // Re-render
+  });
+
+  // Pagination buttons
+  document.getElementById("prevPage")?.addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderFilteredExpenses();
+    }
+  });
+
+  document.getElementById("nextPage")?.addEventListener("click", () => {
+    const totalPages = Math.ceil(
+      getCurrentFilteredExpenses().length / itemsPerPage,
+    );
+    if (currentPage < totalPages) {
+      currentPage++;
+      renderFilteredExpenses();
+    }
+  });
+
   document
     .getElementById("downloadExpensesBtn")
     .addEventListener("click", () => {
@@ -378,30 +405,100 @@ document.addEventListener("DOMContentLoaded", () => {
   let allExpenses = [];
   let currentFilter = "daily";
 
+  // ── Pagination variables ───────────────────────────────
+  let currentPage = 1;
+  let itemsPerPage = localStorage.getItem("itemsPerPage")
+    ? parseInt(localStorage.getItem("itemsPerPage"))
+    : 10;
+
+  // Load saved preference on start
+  document.addEventListener("DOMContentLoaded", () => {
+    const select = document.getElementById("itemsPerPage");
+    if (select) {
+      select.value = itemsPerPage;
+    }
+  });
+
   fetchExpenses();
 
+  // function applyFilter() {
+  //   todayList.innerHTML = "";
+  //   todayTotal = 0;
+
+  //   let filteredExpenses = [];
+
+  //   if (currentFilter === "daily") {
+  //     filteredExpenses = allExpenses.filter((e) => isToday(e.date));
+  //   } else if (currentFilter === "weekly") {
+  //     filteredExpenses = allExpenses.filter((e) => isThisWeek(e.date));
+  //   } else if (currentFilter === "monthly") {
+  //     filteredExpenses = allExpenses.filter((e) => isThisMonth(e.date));
+  //   }
+
+  //   if (filteredExpenses.length === 0) {
+  //     showNoExpensesPlaceholder();
+  //     return;
+  //   }
+
+  //   todayTotalEl.classList.remove("opacity-50");
+
+  //   filteredExpenses.forEach((exp) => addExpenseToList(exp));
+  // }
+
   function applyFilter() {
+    currentPage = 1; // Reset page when filter changes
+    renderFilteredExpenses();
+  }
+
+  function renderFilteredExpenses() {
     todayList.innerHTML = "";
     todayTotal = 0;
 
-    let filteredExpenses = [];
-
-    if (currentFilter === "daily") {
-      filteredExpenses = allExpenses.filter((e) => isToday(e.date));
-    } else if (currentFilter === "weekly") {
-      filteredExpenses = allExpenses.filter((e) => isThisWeek(e.date));
-    } else if (currentFilter === "monthly") {
-      filteredExpenses = allExpenses.filter((e) => isThisMonth(e.date));
-    }
+    const filteredExpenses = getCurrentFilteredExpenses();
 
     if (filteredExpenses.length === 0) {
       showNoExpensesPlaceholder();
+      updatePaginationUI(0, 1);
       return;
     }
 
+    // Calculate pagination
+    const totalItems = filteredExpenses.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageItems = filteredExpenses.slice(start, end);
+
+    // Show only current page items
+    pageItems.forEach((exp) => addExpenseToList(exp));
+
+    // Update total for current filter (still full total, not page)
+    filteredExpenses.forEach((exp) => {
+      todayTotal += Number(exp.amount);
+    });
+    todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
     todayTotalEl.classList.remove("opacity-50");
 
-    filteredExpenses.forEach((exp) => addExpenseToList(exp));
+    // Update pagination UI
+    updatePaginationUI(totalItems, totalPages);
+  }
+
+  function updatePaginationUI(totalItems, totalPages) {
+    const pageInfo = document.getElementById("pageInfo");
+    const prevBtn = document.getElementById("prevPage");
+    const nextBtn = document.getElementById("nextPage");
+
+    if (pageInfo) {
+      pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1}`;
+    }
+
+    if (prevBtn) {
+      prevBtn.disabled = currentPage === 1;
+    }
+
+    if (nextBtn) {
+      nextBtn.disabled = currentPage >= totalPages || totalPages === 0;
+    }
   }
 
   expenseForm.addEventListener("submit", async (e) => {
@@ -557,9 +654,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     todayList.prepend(item);
 
-    const amt = Number(exp.amount);
-    todayTotal += amt;
-    todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
+    // const amt = Number(exp.amount);
+    // todayTotal += amt;
+    // todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
   }
 
   // ask ai api
@@ -677,6 +774,19 @@ document.addEventListener("DOMContentLoaded", () => {
       date.getMonth() === now.getMonth() &&
       date.getFullYear() === now.getFullYear()
     );
+  }
+
+  function getCurrentFilteredExpenses() {
+    if (currentFilter === "daily") {
+      return allExpenses.filter((e) => isToday(e.date));
+    }
+    if (currentFilter === "weekly") {
+      return allExpenses.filter((e) => isThisWeek(e.date));
+    }
+    if (currentFilter === "monthly") {
+      return allExpenses.filter((e) => isThisMonth(e.date));
+    }
+    return allExpenses; // fallback
   }
 
   function getEmoji(cat) {
