@@ -1,5 +1,26 @@
 let token = localStorage.getItem("token");
 
+// function updatePremiumUI() {
+//   const premiumStatusDiv = document.getElementById("premiumStatus");
+//   const buyPremiumBtn = document.getElementById("buyPremiumBtn");
+
+//   const userDetails = JSON.parse(localStorage.getItem("userDetails"));
+
+//   if (userDetails && userDetails.isPremium) {
+//     // Show premium badge
+//     premiumStatusDiv.classList.remove("hidden");
+
+//     // Hide buy button
+//     buyPremiumBtn.classList.add("hidden");
+//   } else {
+//     // Not premium
+//     premiumStatusDiv.classList.add("hidden");
+//     buyPremiumBtn.classList.remove("hidden");
+//   }
+// }
+
+//
+
 function updatePremiumUI() {
   const premiumStatusDiv = document.getElementById("premiumStatus");
   const buyPremiumBtn = document.getElementById("buyPremiumBtn");
@@ -7,15 +28,42 @@ function updatePremiumUI() {
   const userDetails = JSON.parse(localStorage.getItem("userDetails"));
 
   if (userDetails && userDetails.isPremium) {
-    // Show premium badge
     premiumStatusDiv.classList.remove("hidden");
-
-    // Hide buy button
     buyPremiumBtn.classList.add("hidden");
   } else {
-    // Not premium
     premiumStatusDiv.classList.add("hidden");
     buyPremiumBtn.classList.remove("hidden");
+  }
+
+  // 🔥 NEW
+  updateDownloadUI();
+}
+
+function updateDownloadUI() {
+  const userDetails = JSON.parse(localStorage.getItem("userDetails"));
+
+  const downloadBtn = document.getElementById("downloadExpensesBtn");
+  const dailyBtn = document.getElementById("filterDaily");
+  const weeklyBtn = document.getElementById("filterWeekly");
+  const monthlyBtn = document.getElementById("filterMonthly");
+  const premiumHint = document.getElementById("premiumHint");
+
+  const isPremium = userDetails && userDetails.isPremium;
+
+  if (isPremium) {
+    downloadBtn.disabled = false;
+    dailyBtn.disabled = false;
+    weeklyBtn.disabled = false;
+    monthlyBtn.disabled = false;
+
+    premiumHint.classList.add("hidden");
+  } else {
+    downloadBtn.disabled = true;
+    dailyBtn.disabled = true;
+    weeklyBtn.disabled = true;
+    monthlyBtn.disabled = true;
+
+    premiumHint.classList.remove("hidden");
   }
 }
 
@@ -177,6 +225,33 @@ document.addEventListener("DOMContentLoaded", () => {
       .join("");
   }
 
+  document
+    .getElementById("downloadExpensesBtn")
+    .addEventListener("click", () => {
+      const userDetails = JSON.parse(localStorage.getItem("userDetails"));
+
+      if (!userDetails || !userDetails.isPremium) {
+        document.getElementById("buyPremiumBtn").click();
+        return;
+      }
+
+      // Example image URLs (replace with backend-generated later)
+      const imageMap = {
+        daily:
+          "https://drive.google.com/uc?id=1vL9FTtFlkcNH8TfOhaLg_-0XXcZDo92U",
+        weekly:
+          "https://drive.google.com/uc?id=1vL9FTtFlkcNH8TfOhaLg_-0XXcZDo92U",
+        monthly:
+          "https://drive.google.com/uc?id=1vL9FTtFlkcNH8TfOhaLg_-0XXcZDo92U",
+      };
+
+      window.open(imageMap[currentFilter], "_blank");
+    });
+
+  document.getElementById("premiumHint").addEventListener("click", () => {
+    document.getElementById("buyPremiumBtn").click();
+  });
+
   // ── Modal control ────────────────────────────────────────
   const modal = document.getElementById("addModal");
   const modalContent = modal.querySelector("div");
@@ -278,6 +353,21 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target === leaderboardModal) closeLeaderboardModal();
   });
 
+  document.getElementById("filterDaily").addEventListener("click", () => {
+    currentFilter = "daily";
+    applyFilter();
+  });
+
+  document.getElementById("filterWeekly").addEventListener("click", () => {
+    currentFilter = "weekly";
+    applyFilter();
+  });
+
+  document.getElementById("filterMonthly").addEventListener("click", () => {
+    currentFilter = "monthly";
+    applyFilter();
+  });
+
   // ── Expense logic ────────────────────────────────────────
   const expenseForm = document.getElementById("expenseForm");
   const todayList = document.getElementById("todayList");
@@ -285,7 +375,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let todayTotal = 0;
 
+  let allExpenses = [];
+  let currentFilter = "daily";
+
   fetchExpenses();
+
+  function applyFilter() {
+    todayList.innerHTML = "";
+    todayTotal = 0;
+
+    let filteredExpenses = [];
+
+    if (currentFilter === "daily") {
+      filteredExpenses = allExpenses.filter((e) => isToday(e.date));
+    } else if (currentFilter === "weekly") {
+      filteredExpenses = allExpenses.filter((e) => isThisWeek(e.date));
+    } else if (currentFilter === "monthly") {
+      filteredExpenses = allExpenses.filter((e) => isThisMonth(e.date));
+    }
+
+    if (filteredExpenses.length === 0) {
+      showNoExpensesPlaceholder();
+      return;
+    }
+
+    todayTotalEl.classList.remove("opacity-50");
+
+    filteredExpenses.forEach((exp) => addExpenseToList(exp));
+  }
 
   expenseForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -320,7 +437,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const expense = await res.json();
-      addExpenseToList(expense);
+      allExpenses.unshift(expense);
+      applyFilter();
       closeModal();
     } catch (err) {
       console.error(err);
@@ -346,43 +464,46 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error();
       }
 
-      const expenses = await res.json();
+      // const expenses = await res.json();
 
-      todayList.innerHTML = "";
-      todayTotal = 0;
+      // todayList.innerHTML = "";
+      // todayTotal = 0;
 
-      let todayCount = 0;
-      expenses.forEach((exp) => {
-        // if (isToday(exp.date)) {
-        // }
-        addExpenseToList(exp);
-        todayCount++;
-      });
+      // let todayCount = 0;
+      // expenses.forEach((exp) => {
+      //   // if (isToday(exp.date)) {
+      //   // }
+      //   addExpenseToList(exp);
+      //   todayCount++;
+      // });
 
-      if (todayCount === 0) {
-        showNoExpensesPlaceholder();
-      }
+      // if (todayCount === 0) {
+      //   showNoExpensesPlaceholder();
+      // }
+
+      allExpenses = await res.json();
+      applyFilter();
     } catch (err) {
       console.error("Fetch failed", err);
       todayList.innerHTML = `<div class="p-12 text-center text-rose-600">Failed to load expenses</div>`;
     }
   }
 
- function addExpenseToList(exp) {
-  const item = document.createElement("div");
-  // Use exp.id if exists, otherwise exp._id
-  const expenseId = exp.id || exp._id;
-  item.dataset.id = expenseId;
+  function addExpenseToList(exp) {
+    const item = document.createElement("div");
+    // Use exp.id if exists, otherwise exp._id
+    const expenseId = exp.id || exp._id;
+    item.dataset.id = expenseId;
 
-  item.className =
-    "expense-item p-5 sm:p-6 flex items-center gap-5 hover:bg-teal-50/70 transition relative group";
+    item.className =
+      "expense-item p-5 sm:p-6 flex items-center gap-5 hover:bg-teal-50/70 transition relative group";
 
-  const time = new Date(exp.date).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+    const time = new Date(exp.date).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
-  item.innerHTML = `
+    item.innerHTML = `
     <div class="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">
       ${getEmoji(exp.category)}
     </div>
@@ -397,50 +518,49 @@ document.addEventListener("DOMContentLoaded", () => {
     </button>
   `;
 
-  item.querySelector(".delete-btn").addEventListener("click", async () => {
-    if (!confirm("Delete this expense?")) return;
+    item.querySelector(".delete-btn").addEventListener("click", async () => {
+      if (!confirm("Delete this expense?")) return;
 
-    try {
-      const res = await fetch(
-        `http://localhost:5000/api/expenses/delete/${expenseId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/expenses/delete/${expenseId}`,
+          {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
 
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          localStorage.removeItem("token");
-          window.location.href = "/login/index.html";
-          return;
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem("token");
+            window.location.href = "/login/index.html";
+            return;
+          }
+          const errData = await res.json();
+          throw new Error(errData.message || "Delete failed");
         }
-        const errData = await res.json();
-        throw new Error(errData.message || "Delete failed");
+
+        const amt = Number(exp.amount);
+        todayTotal = Math.max(0, todayTotal - amt);
+        todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
+
+        item.remove();
+
+        if (todayList.children.length === 0) {
+          showNoExpensesPlaceholder();
+        }
+      } catch (err) {
+        console.error("Delete error:", err);
+        alert("Could not delete expense: " + (err.message || "Server error"));
       }
+    });
 
-      const amt = Number(exp.amount);
-      todayTotal = Math.max(0, todayTotal - amt);
-      todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
+    todayList.prepend(item);
 
-      item.remove();
-
-      if (todayList.children.length === 0) {
-        showNoExpensesPlaceholder();
-      }
-    } catch (err) {
-      console.error("Delete error:", err);
-      alert("Could not delete expense: " + (err.message || "Server error"));
-    }
-  });
-
-  todayList.prepend(item);
-
-  const amt = Number(exp.amount);
-  todayTotal += amt;
-  todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
-}
-
+    const amt = Number(exp.amount);
+    todayTotal += amt;
+    todayTotalEl.textContent = `₹ ${todayTotal.toLocaleString()}`;
+  }
 
   // ask ai api
 
@@ -483,16 +603,80 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function showNoExpensesPlaceholder() {
+    let message = "";
+    let emoji = "";
+    let motivation = "";
+
+    if (currentFilter === "daily") {
+      message = "No expenses today yet";
+      emoji = "☀️";
+      motivation = "A spend-free day? Nice 😎";
+    }
+
+    if (currentFilter === "weekly") {
+      message = "No expenses recorded this week";
+      emoji = "📆";
+      motivation = "Looks like a quiet week 💆";
+    }
+
+    if (currentFilter === "monthly") {
+      message = "No expenses for this month";
+      emoji = "🗓️";
+      motivation = "Fresh month, fresh start 🌱";
+    }
+
     todayList.innerHTML = `
-      <div class="py-16 text-center text-teal-500/70 italic">
-        No expenses added today yet...<br>
-        <span class="text-sm">Click "+ Add New Expense" to start tracking</span>
+    <div class="py-16 text-center text-teal-500/70">
+      <div class="text-4xl mb-3">${emoji}</div>
+
+      <div class="text-lg font-semibold mb-1">
+        ${message}
       </div>
-    `;
+
+      <div class="text-sm italic mb-4">
+        ${motivation}
+      </div>
+
+      <button
+        onclick="document.getElementById('openAddBtn').click()"
+        class="mt-2 px-5 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition"
+      >
+        + Add Expense
+      </button>
+    </div>
+  `;
+
+    // 🔹 Grey total when empty
+    todayTotalEl.textContent = "₹ 0";
+    todayTotalEl.classList.add("opacity-50");
   }
 
   function isToday(dateStr) {
     return new Date(dateStr).toDateString() === new Date().toDateString();
+  }
+
+  function isThisWeek(dateStr) {
+    const date = new Date(dateStr);
+    const now = new Date();
+
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    return date >= startOfWeek && date < endOfWeek;
+  }
+
+  function isThisMonth(dateStr) {
+    const date = new Date(dateStr);
+    const now = new Date();
+
+    return (
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear()
+    );
   }
 
   function getEmoji(cat) {

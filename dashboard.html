@@ -128,10 +128,49 @@
             </div>
 
             <div
+              class="flex justify-between items-center px-6 py-4 border-b border-white/5 gap-4 flex-wrap"
+            >
+              <div class="flex gap-2">
+                <button
+                  id="filterDaily"
+                  class="px-3 py-1 rounded-xl bg-teal-600 text-sm hover:bg-teal-700 transition"
+                >
+                  Daily
+                </button>
+                <button
+                  id="filterWeekly"
+                  class="px-3 py-1 rounded-xl bg-teal-600 text-sm hover:bg-teal-700 transition"
+                >
+                  Weekly
+                </button>
+                <button
+                  id="filterMonthly"
+                  class="px-3 py-1 rounded-xl bg-teal-600 text-sm hover:bg-teal-700 transition"
+                >
+                  Monthly
+                </button>
+              </div>
+
+              <button
+                id="downloadExpensesBtn"
+                class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Download
+              </button>
+            </div>
+
+            <div
               id="todayList"
               class="divide-y divide-white/5 max-h-[60vh] overflow-y-auto [&>*]:bg-transparent [&>*]:text-white [&>*_small]:text-slate-400"
             ></div>
           </section>
+
+          <p
+            id="premiumHint"
+            class="hidden text-sm text-purple-400 mt-2 cursor-pointer hover:underline"
+          >
+            🔒 Go Premium to unlock downloads
+          </p>
         </div>
       </main>
     </div>
